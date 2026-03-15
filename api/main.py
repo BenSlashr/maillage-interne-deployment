@@ -15,9 +15,9 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # Import des modules personnalisés
-from web_app.models.linking_rules import LinkingRules
-from web_app.models.seo_analyzer import SEOAnalyzer
-from web_app.utils.file_utils import save_uploaded_file, validate_excel_file, get_job_status, get_job_result
+from api.models.linking_rules import LinkingRules
+from api.models.seo_analyzer import SEOAnalyzer
+from api.utils.file_utils import save_uploaded_file, validate_excel_file, get_job_status, get_job_result
 
 # Configuration du logging
 logging.basicConfig(
@@ -28,6 +28,16 @@ logging.basicConfig(
         logging.FileHandler('seo_analysis_api.log')
     ]
 )
+
+_sentry_dsn = os.getenv("SENTRY_DSN")
+if _sentry_dsn:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        traces_sample_rate=0.1,
+        environment="production",
+        server_name="maillage-interne",
+    )
 
 # Création de l'application FastAPI
 app = FastAPI(
@@ -52,7 +62,8 @@ os.makedirs("uploads/gsc", exist_ok=True)
 os.makedirs("results", exist_ok=True)
 
 # Montage du dossier static pour servir les fichiers statiques
-app.mount("/static", StaticFiles(directory="static"), name="static")
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Dictionnaire pour suivre les tâches en cours
 jobs = {}
